@@ -2,12 +2,15 @@ package client
 
 import (
 	"bufio"
+	"bytes"
 	"connected/model"
 	"connected/model/event"
+	"connected/security"
 	"connected/settings"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 )
 
@@ -22,6 +25,7 @@ func Connect(ip string, port int) {
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", ip, port))
 	if err != nil {
 		fmt.Println("Error connecting to server:", err)
+		Stop()
 		return
 	}
 
@@ -30,10 +34,29 @@ func Connect(ip string, port int) {
 	conn.Write(encryptedMagicWord[:])
 
 	go func() {
-		scanner := bufio.NewScanner(conn)
-		for scanner.Scan() {
+		reader := bufio.NewReader(conn)
+		key := security.GenerateAESKey(settings.GetPassword())
+
+		for {
+			// Read until a newline or an error occurs
+			line, err := reader.ReadBytes('\n')
+			if err != nil {
+				if err == io.EOF {
+					fmt.Println("Server closed the connection")
+					Stop()
+					break
+				}
+				fmt.Println("Error reading from server:", err)
+				Stop()
+				break
+			}
+
+			// Trim newline characters
+			line = bytes.TrimSpace(line)
+
+			// Unmarshal the JSON response
 			var response model.Data
-			err := json.Unmarshal(scanner.Bytes(), &response)
+			err = json.Unmarshal(line, &response)
 			if err != nil {
 				fmt.Println("Error unmarshaling server response:", err)
 				continue
@@ -43,15 +66,17 @@ func Connect(ip string, port int) {
 			case model.DataTypeError:
 				event.GetBus().Publish(model.EventTypeError, response.Data)
 			case model.DataTypeOCR:
-				fmt.Println("Received OCR text:", response.Data) // handle the text as needed
+				// Decrypt the OCR text
+				decryptedText, err := security.Decrypt(response.Data, key)
+				if err != nil {
+					fmt.Println("Error decrypting data:", err)
+					continue
+				}
+				fmt.Println("Received OCR text:", string(decryptedText)) // handle the text as needed
 			}
 		}
-		if err := scanner.Err(); err != nil {
-			fmt.Println("Error reading from server:", err)
-		}
 	}()
-	event.GetBus().Publish(model.EventTypeClientConnected)
-
+	go event.GetBus().Publish(model.EventTypeClientConnected)
 }
 
 func Stop() {
@@ -59,7 +84,7 @@ func Stop() {
 	if conn != nil {
 		conn.Close()
 	}
-	event.GetBus().Publish(model.EventTypeClientDisconnected)
+	go event.GetBus().Publish(model.EventTypeClientDisconnected)
 }
 
 func SubscribeTopics() {

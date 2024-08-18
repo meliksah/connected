@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"connected/model"
 	"connected/ocr"
+	"connected/security"
 	"connected/settings"
 	"crypto/sha256"
 	"encoding/json"
@@ -31,13 +32,22 @@ func handleClient(conn net.Conn) {
 		return
 	}
 
+	// AES key for encryption
+	key := security.GenerateAESKey(settings.GetPassword())
+
 	// Continuously send OCR data to the client
 	for serverRunning {
-		mu.Lock()
 		ocrText := ocr.GetOcrResult()
-		mu.Unlock()
 
-		err = sendData(conn, model.DataTypeOCR, ocrText)
+		// Encrypt the OCR text
+		encryptedText, err := security.Encrypt([]byte(ocrText), key)
+		if err != nil {
+			fmt.Println("Error encrypting data:", err)
+			sendError(conn, "ERR002")
+			return
+		}
+
+		err = sendData(conn, model.DataTypeOCR, encryptedText)
 		if err != nil {
 			fmt.Println("Error sending data to client:", err)
 			return
@@ -64,6 +74,7 @@ func sendData(conn net.Conn, dataType model.DataType, data string) error {
 	if err != nil {
 		return err
 	}
+	jsonData = append(jsonData, '\n')
 	_, err = conn.Write(jsonData)
 	return err
 }
