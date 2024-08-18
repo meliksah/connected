@@ -4,6 +4,7 @@ go 1.23.0
 
 require (
 	fyne.io/fyne/v2 v2.5.0
+	github.com/asaskevich/EventBus v0.0.0-20200907212545-49d423059eef
 	github.com/kbinani/screenshot v0.0.0-20240809223827-e520a411f991
 	github.com/otiai10/gosseract/v2 v2.4.1
 )

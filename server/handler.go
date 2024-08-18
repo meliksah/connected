@@ -2,9 +2,11 @@ package server
 
 import (
 	"bytes"
+	"connected/model"
 	"connected/ocr"
 	"connected/settings"
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"net"
 )
@@ -24,7 +26,7 @@ func handleClient(conn net.Conn) {
 
 	if !bytes.Equal(clientMagicWord, expectedMagicWord[:]) {
 		fmt.Println("Password mismatch. Connection refused.")
-		conn.Write([]byte("Password mismatch.\n"))
+		sendError(conn, "ERR001")
 		return
 	}
 
@@ -32,9 +34,22 @@ func handleClient(conn net.Conn) {
 	ocrText := ocr.GetOcrResult()
 	mu.Unlock()
 
-	_, err = conn.Write([]byte(ocrText + "\n"))
-	if err != nil {
-		fmt.Println("Error sending data to client:", err)
-		return
+	sendData(conn, model.DataTypeOCR, ocrText)
+}
+
+func sendError(conn net.Conn, code string) {
+	data := model.Data{
+		Type: model.DataTypeError,
+		Data: code,
 	}
+	sendData(conn, data.Type, data.Data)
+}
+
+func sendData(conn net.Conn, dataType model.DataType, data string) {
+	response := model.Data{
+		Type: dataType,
+		Data: data,
+	}
+	jsonData, _ := json.Marshal(response)
+	conn.Write(jsonData)
 }

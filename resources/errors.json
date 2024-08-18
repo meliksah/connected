@@ -1,0 +1,5 @@
+{
+    "ERR001": "Password mismatch. Connection refused.",
+    "ERR002": "Invalid OCR data received.",
+    "ERR003": "Failed to process OCR."
+}

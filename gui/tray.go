@@ -28,14 +28,14 @@ func setupTray(desk desktop.App, w fyne.Window) {
 			client.Stop()
 			connectClientItem.Label = "Connect Client"
 		} else {
-			showConnectDialog(w)
+			showConnectDialog()
 			connectClientItem.Label = "Disconnect Client"
 		}
 		connectClientItem.Checked = client.IsRunning()
 	})
 
 	settingsItem := fyne.NewMenuItem("Settings", func() {
-		showSettingsDialog(w)
+		showSettingsDialog()
 	})
 
 	m := fyne.NewMenu("Remote OCR",

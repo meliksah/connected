@@ -2,8 +2,11 @@ package client
 
 import (
 	"bufio"
+	"connected/model"
+	"connected/model/event"
 	"connected/settings"
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"net"
 )
@@ -29,8 +32,19 @@ func Connect(ip string, port int) {
 	go func() {
 		scanner := bufio.NewScanner(conn)
 		for scanner.Scan() {
-			text := scanner.Text()
-			fmt.Println("Received OCR text:", text) // handle the text as needed
+			var response model.Data
+			err := json.Unmarshal(scanner.Bytes(), &response)
+			if err != nil {
+				fmt.Println("Error unmarshaling server response:", err)
+				continue
+			}
+
+			switch response.Type {
+			case model.DataTypeError:
+				event.GetBus().Publish(model.EventTypeError, response.Data)
+			case model.DataTypeOCR:
+				fmt.Println("Received OCR text:", response.Data) // handle the text as needed
+			}
 		}
 		if err := scanner.Err(); err != nil {
 			fmt.Println("Error reading from server:", err)

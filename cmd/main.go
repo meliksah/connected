@@ -14,5 +14,12 @@ func main() {
 		return
 	}
 
+	// Load error messages
+	err = settings.LoadErrors()
+	if err != nil {
+		fmt.Println("Error loading error messages:", err)
+		return
+	}
+
 	gui.SetupAndRun()
 }

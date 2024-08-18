@@ -1,7 +1,8 @@
 package gui
 
 import (
-	"connected/client"
+	"connected/model"
+	"connected/model/event"
 	"connected/settings"
 	"fmt"
 	"fyne.io/fyne/v2"
@@ -12,24 +13,33 @@ import (
 	"strconv"
 )
 
+var gui_app fyne.App
+var gui_window fyne.Window
+
 func SetupAndRun() {
-	a := app.New()
-	w := a.NewWindow("Settings")
+	gui_app := app.New()
+	gui_window := gui_app.NewWindow("Settings")
 
 	// Tray Icon Setup
-	if desk, ok := a.(desktop.App); ok {
-		setupTray(desk, w)
+	if desk, ok := gui_app.(desktop.App); ok {
+		setupTray(desk, gui_window)
 	}
 
-	w.SetCloseIntercept(func() {
-		w.Hide() // Hide the window instead of closing it
+	gui_window.SetCloseIntercept(func() {
+		gui_window.Hide() // Hide the window instead of closing it
 	})
-	w.Hide() // Start by hiding the window
+	gui_window.Hide() // Start by hiding the window
 
-	a.Run()
+	gui_app.Run()
+
+	subscribeTopics()
 }
 
-func showSettingsDialog(w fyne.Window) {
+func subscribeTopics() {
+	event.GetBus().Subscribe(model.EventTypeError, HandleError)
+}
+
+func showSettingsDialog() {
 	portEntry := widget.NewEntry()
 	portEntry.SetText(fmt.Sprintf("%d", settings.GetPort()))
 	portEntry.SetPlaceHolder("Enter server port")
@@ -53,56 +63,23 @@ func showSettingsDialog(w fyne.Window) {
 		} else {
 			fmt.Println("Settings saved.")
 		}
-		w.Hide()
+		gui_window.Hide()
 	})
 
-	w.SetContent(container.NewVBox(
+	gui_window.SetContent(container.NewVBox(
 		widget.NewLabel("Server Port:"),
 		portEntry,
 		widget.NewLabel("Password:"),
 		passwordEntry,
 		saveButton,
 	))
-	w.Show()
+	gui_window.Show()
 }
 
-func showConnectDialog(w fyne.Window) {
-	ipEntry := widget.NewEntry()
-	ipEntry.SetText(settings.GetLastIP())
-	ipEntry.SetPlaceHolder("Enter server IP")
+func GetGuiApp() fyne.App {
+	return gui_app
+}
 
-	portEntry := widget.NewEntry()
-	portEntry.SetText(fmt.Sprintf("%d", settings.GetLastPort()))
-	portEntry.SetPlaceHolder("Enter server port")
-
-	connectButton := widget.NewButton("Connect", func() {
-		ip := ipEntry.Text
-		port, err := strconv.Atoi(portEntry.Text)
-		if err != nil {
-			fmt.Println("Invalid port number.")
-			return
-		}
-
-		// Save the latest IP and port to settings
-		settings.SetLastIP(ip)
-		settings.SetLastPort(port)
-		err = settings.SaveSettings()
-		if err != nil {
-			fmt.Println("Error saving settings:", err)
-			return
-		}
-
-		// Connect to the server
-		client.Connect(ip, port)
-		w.Hide()
-	})
-
-	w.SetContent(container.NewVBox(
-		widget.NewLabel("Server IP:"),
-		ipEntry,
-		widget.NewLabel("Server Port:"),
-		portEntry,
-		connectButton,
-	))
-	w.Show()
+func GetGuiWindow() fyne.Window {
+	return gui_window
 }
