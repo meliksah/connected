@@ -2,12 +2,10 @@ package client
 
 import (
 	"bufio"
+	"connected/settings"
 	"crypto/sha256"
 	"fmt"
-	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/widget"
 	"net"
-	"remote_ocr/settings"
 )
 
 var (
@@ -15,10 +13,9 @@ var (
 	conn          net.Conn
 )
 
-func Connect(w fyne.Window) {
+func Connect(ip string, port int) {
 	clientRunning = true
 
-	ip, port := settings.GetLastIP(), settings.GetLastPort()
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", ip, port))
 	if err != nil {
 		fmt.Println("Error connecting to server:", err)
@@ -31,10 +28,9 @@ func Connect(w fyne.Window) {
 
 	go func() {
 		scanner := bufio.NewScanner(conn)
-		ocrText := widget.NewMultiLineEntry()
 		for scanner.Scan() {
 			text := scanner.Text()
-			ocrText.SetText(text)
+			fmt.Println("Received OCR text:", text) // handle the text as needed
 		}
 		if err := scanner.Err(); err != nil {
 			fmt.Println("Error reading from server:", err)

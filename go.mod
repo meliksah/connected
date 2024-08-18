@@ -1,4 +1,4 @@
-module remote_ocr
+module connected
 
 go 1.23.0
 

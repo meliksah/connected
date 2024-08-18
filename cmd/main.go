@@ -1,9 +1,9 @@
 package main
 
 import (
+	"connected/gui"
+	"connected/settings"
 	"fmt"
-	"remote_ocr/gui"
-	"remote_ocr/settings"
 )
 
 func main() {

@@ -15,7 +15,7 @@ type Settings struct {
 }
 
 var (
-	settingsPath = filepath.Join(os.Getenv("HOME"), ".remote_ocr", "settings.json")
+	settingsPath = filepath.Join(os.Getenv("HOME"), ".connected", "settings.json")
 	settings     Settings
 )
 
@@ -73,15 +73,18 @@ func GetLocalIP() string {
 	return settings.ServerIP
 }
 
-func GetOcrResult() string {
-	return ""
-}
-
 func SetPort(port int) {
 	settings.ServerPort = port
 }
 
-// SetPassword sets the password in settings.
 func SetPassword(password string) {
 	settings.Password = password
+}
+
+func SetLastIP(lastIP string) {
+	settings.LastIP = lastIP
+}
+
+func SetLastPort(lastPort int) {
+	settings.LastPort = lastPort
 }

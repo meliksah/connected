@@ -1,10 +1,10 @@
 package server
 
 import (
+	"connected/ocr"
+	"connected/settings"
 	"fmt"
 	"net"
-	"remote_ocr/ocr"
-	"remote_ocr/settings"
 	"sync"
 	"time"
 )

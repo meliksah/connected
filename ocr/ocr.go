@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"image/png"
 	"net"
-	"remote_ocr/settings"
 	"sync"
 
 	"github.com/kbinani/screenshot"
@@ -13,6 +12,7 @@ import (
 )
 
 var mu sync.Mutex
+var ocrResult string
 
 func CaptureAndOcr(conn net.Conn) {
 	bounds := screenshot.GetDisplayBounds(0)
@@ -39,7 +39,7 @@ func CaptureAndOcr(conn net.Conn) {
 	}
 
 	mu.Lock()
-	settings.GetOcrResult = func() string { return text }
+	ocrResult = text
 	mu.Unlock()
 
 	if conn != nil {
@@ -48,4 +48,8 @@ func CaptureAndOcr(conn net.Conn) {
 			fmt.Println("Error sending OCR text to client:", err)
 		}
 	}
+}
+
+func GetOcrResult() string {
+	return ocrResult
 }

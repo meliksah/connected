@@ -2,10 +2,11 @@ package server
 
 import (
 	"bytes"
+	"connected/ocr"
+	"connected/settings"
 	"crypto/sha256"
 	"fmt"
 	"net"
-	"remote_ocr/settings"
 )
 
 func handleClient(conn net.Conn) {
@@ -28,7 +29,7 @@ func handleClient(conn net.Conn) {
 	}
 
 	mu.Lock()
-	ocrText := settings.GetOcrResult()
+	ocrText := ocr.GetOcrResult()
 	mu.Unlock()
 
 	_, err = conn.Write([]byte(ocrText + "\n"))

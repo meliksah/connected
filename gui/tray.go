@@ -1,12 +1,12 @@
 package gui
 
 import (
+	"connected/client"
+	"connected/server"
+	"connected/settings"
 	"fmt"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/driver/desktop"
-	"remote_ocr/client"
-	"remote_ocr/server"
-	"remote_ocr/settings"
 )
 
 func setupTray(desk desktop.App, w fyne.Window) {
@@ -28,7 +28,7 @@ func setupTray(desk desktop.App, w fyne.Window) {
 			client.Stop()
 			connectClientItem.Label = "Connect Client"
 		} else {
-			client.Connect(w)
+			showConnectDialog(w)
 			connectClientItem.Label = "Disconnect Client"
 		}
 		connectClientItem.Checked = client.IsRunning()
