@@ -17,8 +17,8 @@ var gui_app fyne.App
 var gui_window fyne.Window
 
 func SetupAndRun() {
-	gui_app := app.New()
-	gui_window := gui_app.NewWindow("Settings")
+	gui_app = app.New()
+	gui_window = gui_app.NewWindow("Settings")
 
 	// Tray Icon Setup
 	if desk, ok := gui_app.(desktop.App); ok {
@@ -31,11 +31,9 @@ func SetupAndRun() {
 	gui_window.Hide() // Start by hiding the window
 
 	gui_app.Run()
-
-	subscribeTopics()
 }
 
-func subscribeTopics() {
+func SubscribeTopics() {
 	event.GetBus().Subscribe(model.EventTypeError, HandleError)
 }
 

@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"time"
 )
 
 func handleClient(conn net.Conn) {
@@ -30,11 +31,20 @@ func handleClient(conn net.Conn) {
 		return
 	}
 
-	mu.Lock()
-	ocrText := ocr.GetOcrResult()
-	mu.Unlock()
+	// Continuously send OCR data to the client
+	for serverRunning {
+		mu.Lock()
+		ocrText := ocr.GetOcrResult()
+		mu.Unlock()
 
-	sendData(conn, model.DataTypeOCR, ocrText)
+		err = sendData(conn, model.DataTypeOCR, ocrText)
+		if err != nil {
+			fmt.Println("Error sending data to client:", err)
+			return
+		}
+
+		time.Sleep(500 * time.Millisecond)
+	}
 }
 
 func sendError(conn net.Conn, code string) {
@@ -45,11 +55,15 @@ func sendError(conn net.Conn, code string) {
 	sendData(conn, data.Type, data.Data)
 }
 
-func sendData(conn net.Conn, dataType model.DataType, data string) {
+func sendData(conn net.Conn, dataType model.DataType, data string) error {
 	response := model.Data{
 		Type: dataType,
 		Data: data,
 	}
-	jsonData, _ := json.Marshal(response)
-	conn.Write(jsonData)
+	jsonData, err := json.Marshal(response)
+	if err != nil {
+		return err
+	}
+	_, err = conn.Write(jsonData)
+	return err
 }

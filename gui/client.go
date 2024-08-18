@@ -1,7 +1,8 @@
 package gui
 
 import (
-	"connected/client"
+	"connected/model"
+	"connected/model/event"
 	"connected/settings"
 	"fmt"
 	"fyne.io/fyne/v2/container"
@@ -35,8 +36,7 @@ func showConnectDialog() {
 			return
 		}
 
-		// Connect to the server
-		client.Connect(ip, port)
+		event.GetBus().Publish(model.EventTypeClientConnect, ip, port)
 		gui_window.Hide()
 	})
 

@@ -50,6 +50,8 @@ func Connect(ip string, port int) {
 			fmt.Println("Error reading from server:", err)
 		}
 	}()
+	event.GetBus().Publish(model.EventTypeClientConnected)
+
 }
 
 func Stop() {
@@ -57,6 +59,12 @@ func Stop() {
 	if conn != nil {
 		conn.Close()
 	}
+	event.GetBus().Publish(model.EventTypeClientDisconnected)
+}
+
+func SubscribeTopics() {
+	event.GetBus().Subscribe(model.EventTypeClientConnect, Connect)
+	event.GetBus().Subscribe(model.EventTypeClientDisconnect, Stop)
 }
 
 func IsRunning() bool {

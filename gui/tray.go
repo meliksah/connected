@@ -1,37 +1,52 @@
 package gui
 
 import (
-	"connected/client"
-	"connected/server"
+	"connected/model"
+	"connected/model/event"
 	"connected/settings"
 	"fmt"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/driver/desktop"
 )
 
+var serverIsRunning = false
+var clientIsRunning = false
+
 func setupTray(desk desktop.App, w fyne.Window) {
 	var startServerItem, connectClientItem *fyne.MenuItem
 
 	startServerItem = fyne.NewMenuItem("Start Server", func() {
-		if server.IsRunning() {
-			server.Stop()
+		if clientIsRunning {
+			ShowError("You cannot start a server while connected to client!")
+			return
+		}
+		if !serverIsRunning {
+			event.GetBus().Publish(model.EventTypeServerStart)
+			serverIsRunning = true
 			startServerItem.Label = "Start Server"
 		} else {
-			server.Start()
+			event.GetBus().Publish(model.EventTypeServerStop)
+			serverIsRunning = false
 			startServerItem.Label = "Stop Server"
 		}
-		startServerItem.Checked = server.IsRunning()
+		startServerItem.Checked = serverIsRunning
 	})
 
 	connectClientItem = fyne.NewMenuItem("Connect Client", func() {
-		if client.IsRunning() {
-			client.Stop()
+		if serverIsRunning {
+			ShowError("You cannot start a client while connected to server!")
+			return
+		}
+		if clientIsRunning {
+			event.GetBus().Publish(model.EventTypeClientDisconnect)
+			clientIsRunning = false
 			connectClientItem.Label = "Connect Client"
 		} else {
 			showConnectDialog()
+			clientIsRunning = true
 			connectClientItem.Label = "Disconnect Client"
 		}
-		connectClientItem.Checked = client.IsRunning()
+		connectClientItem.Checked = clientIsRunning
 	})
 
 	settingsItem := fyne.NewMenuItem("Settings", func() {
