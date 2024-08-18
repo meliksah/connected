@@ -73,6 +73,10 @@ func GetLocalIP() string {
 	return settings.ServerIP
 }
 
+func SetLocalIP(ip string) {
+	settings.ServerIP = ip
+}
+
 func SetPort(port int) {
 	settings.ServerPort = port
 }

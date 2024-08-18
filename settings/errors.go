@@ -12,8 +12,16 @@ type ErrorSettings struct {
 
 var (
 	errorSettings  ErrorSettings
-	errorsFilePath = filepath.Join("resources", "errors.json")
+	errorsFilePath string
 )
+
+func init() {
+	wd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	errorsFilePath = filepath.Join(wd, "resources", "errors.json")
+}
 
 func LoadErrors() error {
 	file, err := os.Open(errorsFilePath)
@@ -35,5 +43,5 @@ func GetErrorMessage(code string) string {
 	if msg, exists := errorSettings.Errors[code]; exists {
 		return msg
 	}
-	return "Unknown error occurred."
+	return ""
 }

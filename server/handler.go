@@ -13,8 +13,10 @@ import (
 	"time"
 )
 
-func handleClient(conn net.Conn) {
-	defer conn.Close()
+func handleClient(conn net.Conn, clientIP string) {
+	defer func() {
+		conn.Close()
+	}()
 
 	clientMagicWord := make([]byte, sha256.Size)
 	_, err := conn.Read(clientMagicWord)
@@ -29,6 +31,7 @@ func handleClient(conn net.Conn) {
 	if !bytes.Equal(clientMagicWord, expectedMagicWord[:]) {
 		fmt.Println("Password mismatch. Connection refused.")
 		sendError(conn, "ERR001")
+		DisconnectClient(clientIP)
 		return
 	}
 
@@ -44,12 +47,14 @@ func handleClient(conn net.Conn) {
 		if err != nil {
 			fmt.Println("Error encrypting data:", err)
 			sendError(conn, "ERR002")
+			DisconnectClient(clientIP)
 			return
 		}
 
 		err = sendData(conn, model.DataTypeOCR, encryptedText)
 		if err != nil {
 			fmt.Println("Error sending data to client:", err)
+			DisconnectClient(clientIP)
 			return
 		}
 

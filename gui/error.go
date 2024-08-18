@@ -8,7 +8,11 @@ import (
 )
 
 func HandleError(errorCode string) {
-	ShowError(settings.GetErrorMessage(errorCode))
+	errorMessage := settings.GetErrorMessage(errorCode)
+	if errorMessage == "" {
+		errorMessage = errorCode
+	}
+	ShowError(errorMessage)
 }
 
 func ShowError(errorMessage string) {

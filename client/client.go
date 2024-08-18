@@ -25,6 +25,7 @@ func Connect(ip string, port int) {
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", ip, port))
 	if err != nil {
 		fmt.Println("Error connecting to server:", err)
+		go event.GetBus().Publish(model.EventTypeError, "Error connecting to server:"+err.Error())
 		Stop()
 		return
 	}
@@ -43,10 +44,12 @@ func Connect(ip string, port int) {
 			if err != nil {
 				if err == io.EOF {
 					fmt.Println("Server closed the connection")
+					go event.GetBus().Publish(model.EventTypeError, "Server closed the connection: "+err.Error())
 					Stop()
 					break
 				}
 				fmt.Println("Error reading from server:", err)
+				go event.GetBus().Publish(model.EventTypeError, "Error reading from server: "+err.Error())
 				Stop()
 				break
 			}
@@ -64,7 +67,7 @@ func Connect(ip string, port int) {
 
 			switch response.Type {
 			case model.DataTypeError:
-				event.GetBus().Publish(model.EventTypeError, response.Data)
+				go event.GetBus().Publish(model.EventTypeError, response.Data)
 			case model.DataTypeOCR:
 				// Decrypt the OCR text
 				decryptedText, err := security.Decrypt(response.Data, key)
