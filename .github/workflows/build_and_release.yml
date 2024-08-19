@@ -1,0 +1,99 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Install prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libgl1-mesa-dev xorg-dev
+          go install github.com/fyne-io/fyne-cross@latest
+      - name: Install Tesseract and additional dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tesseract-ocr libtesseract-dev \
+            libgl1-mesa-dev xorg-dev libxcursor-dev libxrandr-dev \
+            libxinerama-dev libxi-dev libxxf86vm-dev
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.23'
+
+     # - name: Build for Linux
+     #   run: fyne-cross linux -output connected-linux -app-id io.lightningcodes.connected -arch="amd64,arm64" ./cmd
+
+      - name: Build for Windows
+        run: fyne-cross windows -output connected-windows -app-id io.lightningcodes.connected -arch="amd64,arm64" ./cmd
+
+      # - name: Build for macOS
+      #   run: fyne-cross darwin -output connected-darwin -app-id io.lightningcodes.connected -arch="amd64,arm64" ./cmd
+
+      - name: Normalize version tag
+        id: normalize_version
+        run: |
+          version=$(echo ${{ github.ref_name }} | sed -e 's/v//g')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Normalize artifact names
+        run: |
+          mv fyne-cross/dist/linux-amd64/connected-linux fyne-cross/dist/linux-amd64/connected_${{ steps.normalize_version.outputs.version }}_linux
+          mv fyne-cross/dist/windows-amd64/connected-windows.exe fyne-cross/dist/windows-amd64/connected_${{ steps.normalize_version.outputs.version }}_windows.exe
+          mv fyne-cross/dist/darwin-amd64/connected-darwin fyne-cross/dist/darwin-amd64/connected_${{ steps.normalize_version.outputs.version }}_darwin
+
+      - name: Upload Linux Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: connected-linux
+          path: fyne-cross/dist/linux-amd64/connected_${{ steps.normalize_version.outputs.version }}_linux
+
+      - name: Upload Windows Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: connected-windows
+          path: fyne-cross/dist/windows-amd64/connected_${{ steps.normalize_version.outputs.version }}_windows.exe
+
+      - name: Upload macOS Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: connected-darwin
+          path: fyne-cross/dist/darwin-amd64/connected_${{ steps.normalize_version.outputs.version }}_darwin
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: dist
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            fyne-cross/dist/linux-amd64/connected_${{ steps.normalize_version.outputs.version }}_linux
+            fyne-cross/dist/windows-amd64/connected_${{ steps.normalize_version.outputs.version }}_windows.exe
+            fyne-cross/dist/darwin-amd64/connected_${{ steps.normalize_version.outputs.version }}_darwin
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body: |
+            Release of version ${{ github.ref_name }}.
+          draft: false
+          prerelease: false

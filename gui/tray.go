@@ -98,7 +98,13 @@ func subscribeToEvents() {
 
 		// Add connected client item directly after the Connect Client item
 		if connectedClientItem == nil {
-			connectedClientItem = fyne.NewMenuItem(fmt.Sprintf("Connected to: %s:%d", settings.GetLastIP(), settings.GetLastPort()), nil)
+			connectedClientItem = fyne.NewMenuItem(fmt.Sprintf("Connected to: %s:%d", settings.GetLastIP(), settings.GetLastPort()), func() {
+				if isOcrWindowHidden == true {
+					ocrWindow.Show()
+				} else {
+					ocrWindow.Hide()
+				}
+			})
 			insertMenuItemAfter(connectClientItem, connectedClientItem)
 		}
 	}, false)

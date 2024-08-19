@@ -34,7 +34,8 @@ func SetupAndRun() {
 }
 
 func SubscribeTopics() {
-	event.GetBus().Subscribe(model.EventTypeError, HandleError)
+	event.GetBus().SubscribeAsync(model.EventTypeError, HandleError, false)
+	event.GetBus().SubscribeAsync(model.EventTypeOcrTextReceived, HandleOcrTextReceivedEvent, false)
 }
 
 func showSettingsDialog() {

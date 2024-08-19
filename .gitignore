@@ -32,3 +32,5 @@ Thumbs.db
 dev.yaml
 config.yaml
 
+# Distribution folder
+dist/

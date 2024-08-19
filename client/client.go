@@ -22,13 +22,14 @@ var (
 func Connect(ip string, port int) {
 	clientRunning = true
 
-	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", ip, port))
+	connection, err := net.Dial("tcp", fmt.Sprintf("%s:%d", ip, port))
 	if err != nil {
 		fmt.Println("Error connecting to server:", err)
 		go event.GetBus().Publish(model.EventTypeError, "Error connecting to server:"+err.Error())
 		Stop()
 		return
 	}
+	conn = connection
 
 	hash := sha256.Sum256([]byte(settings.GetPassword()))
 	encryptedMagicWord := sha256.Sum256(append(hash[:], []byte(settings.MagicWord)...))
@@ -38,8 +39,7 @@ func Connect(ip string, port int) {
 		reader := bufio.NewReader(conn)
 		key := security.GenerateAESKey(settings.GetPassword())
 
-		for {
-			// Read until a newline or an error occurs
+		for clientRunning {
 			line, err := reader.ReadBytes('\n')
 			if err != nil {
 				if err == io.EOF {
@@ -54,10 +54,8 @@ func Connect(ip string, port int) {
 				break
 			}
 
-			// Trim newline characters
 			line = bytes.TrimSpace(line)
 
-			// Unmarshal the JSON response
 			var response model.Data
 			err = json.Unmarshal(line, &response)
 			if err != nil {
@@ -69,13 +67,12 @@ func Connect(ip string, port int) {
 			case model.DataTypeError:
 				go event.GetBus().Publish(model.EventTypeError, response.Data)
 			case model.DataTypeOCR:
-				// Decrypt the OCR text
 				decryptedText, err := security.Decrypt(response.Data, key)
 				if err != nil {
 					fmt.Println("Error decrypting data:", err)
 					continue
 				}
-				fmt.Println("Received OCR text:", string(decryptedText)) // handle the text as needed
+				go event.GetBus().Publish(model.EventTypeOcrTextReceived, string(decryptedText))
 			}
 		}
 	}()

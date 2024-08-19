@@ -12,4 +12,5 @@ const (
 	EventTypeClientDisconnected      string = "client:disconnected"
 	EventTypeServerClientListUpdated string = "server:client:updated"
 	EventTypeServerDisconnectClient  string = "server:client:disconnect"
+	EventTypeOcrTextReceived         string = "ocr:text:received"
 )

@@ -16,13 +16,6 @@ func main() {
 		fmt.Println("Error loading settings:", err)
 		return
 	}
-
-	// Load error messages
-	err = settings.LoadErrors()
-	if err != nil {
-		fmt.Println("Error loading error messages:", err)
-		return
-	}
 	subscribeTopics()
 
 	gui.SetupAndRun()

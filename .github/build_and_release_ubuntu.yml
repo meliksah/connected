@@ -1,0 +1,64 @@
+name: release connected linux gui
+
+permissions:
+  contents: write
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  linux-gui-releaser:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Tesseract and additional dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tesseract-ocr libtesseract-dev \
+            libgl1-mesa-dev xorg-dev libxcursor-dev libxrandr-dev \
+            libxinerama-dev libxi-dev libxxf86vm-dev
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.23'
+
+      - name: Set up Fyne
+        run: go install fyne.io/fyne/v2/cmd/fyne@latest
+
+      - name: Build Linux (amd64)
+        run: |
+          GOARCH=amd64 fyne package --name connected_amd64 --src ./cmd/ --os linux -icon ../resources/icon.png
+
+      - name: Build Linux (arm64)
+        run: |
+          GOARCH=arm64 fyne package --name connected_arm64 --src ./cmd/ --os linux -icon ../resources/icon.png
+
+      - name: Normalize version tag
+        id: normalize_version
+        shell: bash
+        run: |
+          version=$(echo ${{ github.ref_name }} | sed -e 's/v//g')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Normalize artifact names
+        id: normalize_artifact_name
+        shell: bash
+        run: |
+          tar -cvzf connected_${{ steps.normalize_version.outputs.version }}_linux_amd64_gui.tar.gz connected_amd64
+          tar -cvzf connected_${{ steps.normalize_version.outputs.version }}_linux_arm64_gui.tar.gz connected_arm64
+
+      - name: Release GUI
+        uses: softprops/action-gh-release@v1
+        with:
+          if: startsWith(github.ref, 'refs/tags/')
+          files: |
+            ./connected_${{ steps.normalize_version.outputs.version }}_linux_amd64_gui.tar.gz
+            ./connected_${{ steps.normalize_version.outputs.version }}_linux_arm64_gui.tar.gz
+          token: ${{ secrets.GITHUB_TOKEN }}

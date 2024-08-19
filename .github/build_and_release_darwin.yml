@@ -1,0 +1,71 @@
+name: release connected macos gui
+
+permissions:
+  contents: write
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  macos-gui-releaser:
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Tesseract and dependencies for amd64
+        run: |
+          arch -x86_64 brew install tesseract
+        env:
+          CPATH: /opt/homebrew/include
+          LIBRARY_PATH: /opt/homebrew/lib
+
+      - name: Install Tesseract and dependencies for arm64
+        run: |
+          brew install tesseract
+        env:
+          CPATH: /opt/homebrew/include
+          LIBRARY_PATH: /opt/homebrew/lib
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.23'
+
+      - name: Set up Fyne
+        run: go install fyne.io/fyne/v2/cmd/fyne@latest
+
+      - name: Build macOS (amd64)
+        run: |
+          arch -x86_64 CPATH=/opt/homebrew/include LIBRARY_PATH=/opt/homebrew/lib GOARCH=amd64 fyne package --name connected_amd64 --src ./cmd/ --os darwin -icon ../resources/icon.png --ldflags "-mmacosx-version-min=10.14"
+
+      - name: Build macOS (arm64)
+        run: |
+          CPATH=/opt/homebrew/include LIBRARY_PATH=/opt/homebrew/lib GOARCH=arm64 fyne package --name connected_arm64 --src ./cmd/ --os darwin -icon ../resources/icon.png --ldflags "-mmacosx-version-min=10.14"
+
+      - name: Normalize version tag
+        id: normalize_version
+        shell: bash
+        run: |
+          version=$(echo ${{ github.ref_name }} | sed -e 's/v//g')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Normalize artifact names
+        id: normalize_artifact_name
+        shell: bash
+        run: |
+          tar -cvzf connected_${{ steps.normalize_version.outputs.version }}_darwin_amd64_gui.tar.gz connected_amd64.app
+          tar -cvzf connected_${{ steps.normalize_version.outputs.version }}_darwin_arm64_gui.tar.gz connected_arm64.app
+
+      - name: Release GUI
+        uses: softprops/action-gh-release@v1
+        with:
+          if: startsWith(github.ref, 'refs/tags/')
+          files: |
+            ./connected_${{ steps.normalize_version.outputs.version }}_darwin_amd64_gui.tar.gz 
+            ./connected_${{ steps.normalize_version.outputs.version }}_darwin_arm64_gui.tar.gz
+          token: ${{ secrets.GITHUB_TOKEN }}

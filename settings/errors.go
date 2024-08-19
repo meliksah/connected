@@ -1,44 +1,21 @@
 package settings
 
-import (
-	"encoding/json"
-	"os"
-	"path/filepath"
-)
-
+// ErrorSettings contains a map of error codes to their corresponding messages.
 type ErrorSettings struct {
-	Errors map[string]string `json:"errors"`
+	Errors map[string]string
 }
 
-var (
-	errorSettings  ErrorSettings
-	errorsFilePath string
-)
-
-func init() {
-	wd, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-	errorsFilePath = filepath.Join(wd, "resources", "errors.json")
+// Initialize the error settings with predefined error messages.
+var errorSettings = ErrorSettings{
+	Errors: map[string]string{
+		"ERR001": "Password mismatch. Connection refused.",
+		"ERR002": "Invalid OCR data received.",
+		"ERR003": "Failed to process OCR.",
+	},
 }
 
-func LoadErrors() error {
-	file, err := os.Open(errorsFilePath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&errorSettings)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
+// GetErrorMessage returns the error message corresponding to the given error code.
+// If the error code does not exist, it returns an empty string.
 func GetErrorMessage(code string) string {
 	if msg, exists := errorSettings.Errors[code]; exists {
 		return msg
